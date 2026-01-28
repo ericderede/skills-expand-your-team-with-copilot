@@ -472,6 +472,13 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  // Function to escape HTML to prevent XSS
+  function escapeHtml(text) {
+    const div = document.createElement("div");
+    div.textContent = text;
+    return div.innerHTML;
+  }
+
   // Function to render a single activity card
   function renderActivityCard(name, details) {
     const activityCard = document.createElement("div");
@@ -554,19 +561,37 @@ document.addEventListener("DOMContentLoaded", () => {
       </div>
       <div class="social-share-buttons">
         <span class="share-label">Share:</span>
-        <button class="share-btn share-twitter" data-activity="${name}" title="Share on Twitter/X">
+        <button class="share-btn share-twitter" data-activity="${escapeHtml(
+          name
+        )}" title="Share on Twitter/X" aria-label="Share ${escapeHtml(
+        name
+      )} on Twitter/X">
           𝕏
         </button>
-        <button class="share-btn share-facebook" data-activity="${name}" title="Share on Facebook">
+        <button class="share-btn share-facebook" data-activity="${escapeHtml(
+          name
+        )}" title="Share on Facebook" aria-label="Share ${escapeHtml(
+        name
+      )} on Facebook">
           f
         </button>
-        <button class="share-btn share-linkedin" data-activity="${name}" title="Share on LinkedIn">
+        <button class="share-btn share-linkedin" data-activity="${escapeHtml(
+          name
+        )}" title="Share on LinkedIn" aria-label="Share ${escapeHtml(
+        name
+      )} on LinkedIn">
           in
         </button>
-        <button class="share-btn share-email" data-activity="${name}" title="Share via Email">
+        <button class="share-btn share-email" data-activity="${escapeHtml(
+          name
+        )}" title="Share via Email" aria-label="Share ${escapeHtml(
+        name
+      )} via Email">
           ✉
         </button>
-        <button class="share-btn share-copy" data-activity="${name}" title="Copy Link">
+        <button class="share-btn share-copy" data-activity="${escapeHtml(
+          name
+        )}" title="Copy Link" aria-label="Copy link to ${escapeHtml(name)}">
           🔗
         </button>
       </div>
@@ -780,7 +805,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Handle social sharing
   function handleShare(event, activityName, details) {
-    const button = event.target;
+    const button = event.currentTarget;
     const shareType = button.classList.contains("share-twitter")
       ? "twitter"
       : button.classList.contains("share-facebook")
@@ -792,10 +817,8 @@ document.addEventListener("DOMContentLoaded", () => {
       : "copy";
 
     // Generate share URL and text
-    const pageUrl = window.location.href;
-    const activityUrl = `${pageUrl.split("?")[0]}#${encodeURIComponent(
-      activityName
-    )}`;
+    const baseUrl = window.location.origin + window.location.pathname;
+    const activityUrl = `${baseUrl}#${encodeURIComponent(activityName)}`;
     const shareText = `Check out ${activityName} at Mergington High School! ${details.description}`;
     const encodedText = encodeURIComponent(shareText);
     const encodedUrl = encodeURIComponent(activityUrl);
@@ -832,16 +855,35 @@ document.addEventListener("DOMContentLoaded", () => {
         break;
 
       case "copy":
-        // Copy to clipboard
-        navigator.clipboard
-          .writeText(activityUrl)
-          .then(() => {
+        // Copy to clipboard with fallback
+        if (navigator.clipboard && window.isSecureContext) {
+          navigator.clipboard
+            .writeText(activityUrl)
+            .then(() => {
+              showMessage("Link copied to clipboard!", "success");
+            })
+            .catch((err) => {
+              console.error("Failed to copy:", err);
+              showMessage("Failed to copy link", "error");
+            });
+        } else {
+          // Fallback for non-secure contexts
+          const textArea = document.createElement("textarea");
+          textArea.value = activityUrl;
+          textArea.style.position = "fixed";
+          textArea.style.left = "-999999px";
+          document.body.appendChild(textArea);
+          textArea.focus();
+          textArea.select();
+          try {
+            document.execCommand("copy");
             showMessage("Link copied to clipboard!", "success");
-          })
-          .catch((err) => {
+          } catch (err) {
             console.error("Failed to copy:", err);
             showMessage("Failed to copy link", "error");
-          });
+          }
+          document.body.removeChild(textArea);
+        }
         break;
     }
   }
