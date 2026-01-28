@@ -552,6 +552,24 @@ document.addEventListener("DOMContentLoaded", () => {
             .join("")}
         </ul>
       </div>
+      <div class="social-share-buttons">
+        <span class="share-label">Share:</span>
+        <button class="share-btn share-twitter" data-activity="${name}" title="Share on Twitter/X">
+          𝕏
+        </button>
+        <button class="share-btn share-facebook" data-activity="${name}" title="Share on Facebook">
+          f
+        </button>
+        <button class="share-btn share-linkedin" data-activity="${name}" title="Share on LinkedIn">
+          in
+        </button>
+        <button class="share-btn share-email" data-activity="${name}" title="Share via Email">
+          ✉
+        </button>
+        <button class="share-btn share-copy" data-activity="${name}" title="Copy Link">
+          🔗
+        </button>
+      </div>
       <div class="activity-card-actions">
         ${
           currentUser
@@ -575,6 +593,14 @@ document.addEventListener("DOMContentLoaded", () => {
     const deleteButtons = activityCard.querySelectorAll(".delete-participant");
     deleteButtons.forEach((button) => {
       button.addEventListener("click", handleUnregister);
+    });
+
+    // Add click handlers for social share buttons
+    const shareButtons = activityCard.querySelectorAll(".share-btn");
+    shareButtons.forEach((button) => {
+      button.addEventListener("click", (event) => {
+        handleShare(event, name, details);
+      });
     });
 
     // Add click handler for register button (only when authenticated)
@@ -750,6 +776,74 @@ document.addEventListener("DOMContentLoaded", () => {
         }, 300);
       }
     });
+  }
+
+  // Handle social sharing
+  function handleShare(event, activityName, details) {
+    const button = event.target;
+    const shareType = button.classList.contains("share-twitter")
+      ? "twitter"
+      : button.classList.contains("share-facebook")
+      ? "facebook"
+      : button.classList.contains("share-linkedin")
+      ? "linkedin"
+      : button.classList.contains("share-email")
+      ? "email"
+      : "copy";
+
+    // Generate share URL and text
+    const pageUrl = window.location.href;
+    const activityUrl = `${pageUrl.split("?")[0]}#${encodeURIComponent(
+      activityName
+    )}`;
+    const shareText = `Check out ${activityName} at Mergington High School! ${details.description}`;
+    const encodedText = encodeURIComponent(shareText);
+    const encodedUrl = encodeURIComponent(activityUrl);
+
+    switch (shareType) {
+      case "twitter":
+        window.open(
+          `https://twitter.com/intent/tweet?text=${encodedText}&url=${encodedUrl}`,
+          "_blank",
+          "width=550,height=420"
+        );
+        break;
+
+      case "facebook":
+        window.open(
+          `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`,
+          "_blank",
+          "width=550,height=420"
+        );
+        break;
+
+      case "linkedin":
+        window.open(
+          `https://www.linkedin.com/sharing/share-offsite/?url=${encodedUrl}`,
+          "_blank",
+          "width=550,height=420"
+        );
+        break;
+
+      case "email":
+        window.location.href = `mailto:?subject=${encodeURIComponent(
+          `Check out ${activityName}!`
+        )}&body=${encodedText}%0A%0A${encodedUrl}`;
+        break;
+
+      case "copy":
+        // Copy to clipboard
+        navigator.clipboard
+          .writeText(activityUrl)
+          .then(() => {
+            showMessage("Link copied to clipboard!", "success");
+          })
+          .catch((err) => {
+            console.error("Failed to copy:", err);
+            showMessage("Failed to copy link", "error");
+          });
+        break;
+    }
   }
 
   // Handle unregistration with confirmation
